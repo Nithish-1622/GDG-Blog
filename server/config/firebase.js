@@ -5,7 +5,7 @@ require('dotenv').config();
 const firebaseConfig = {
   projectId: process.env.FIREBASE_PROJECT_ID || "gdg-blog-99118",
 };
-
+ 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
   try {
