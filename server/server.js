@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Import services and middleware
@@ -233,14 +234,23 @@ app.post('/api/auth/login', async (req, res) => {
         return res.status(401).json({ error: 'No account found with this email address' });
       }
       
+      // Create JWT token for authentication
+      const jwtSecret = process.env.JWT_SECRET || 'gdg-blog-secret-key-change-in-production';
+      const token = jwt.sign(
+        { 
+          uid: userRecord.uid, 
+          email: userRecord.email,
+          displayName: userRecord.displayName
+        },
+        jwtSecret,
+        { expiresIn: '24h' }
+      );
+      
       console.log('✅ Login successful for user:', userRecord.uid);
       
-      // Instead of custom tokens, return user data for frontend to handle
-      // Frontend will need to manage authentication state manually
       res.json({ 
         message: 'Login successful',
-        requiresFrontendAuth: true, // Flag to indicate frontend should handle auth
-        credentials: { email, password }, // Send back for frontend Firebase Auth
+        token: token,
         user: {
           uid: userRecord.uid,
           email: userRecord.email,

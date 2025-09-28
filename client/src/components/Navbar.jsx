@@ -57,7 +57,7 @@ function Navbar() {
                   Write Blog
                 </Link>
                 <span className="text-sm text-gray-600 font-medium px-3 py-2">
-                  Hello, <span className="text-primary-600">{currentUser.name}!</span>
+                  Hello, <span className="text-primary-600">{currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}!</span>
                 </span>
                 <button 
                   onClick={handleLogout} 
@@ -132,7 +132,7 @@ function Navbar() {
                 Write Blog
               </Link>
               <div className="px-3 py-2 text-sm text-gray-600">
-                Hello, <span className="text-primary-600 font-medium">{currentUser.name}!</span>
+                Hello, <span className="text-primary-600 font-medium">{currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}!</span>
               </div>
               <button
                 onClick={handleLogout}
