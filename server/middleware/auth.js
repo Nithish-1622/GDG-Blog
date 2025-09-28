@@ -1,6 +1,7 @@
 const AuthService = require('../services/authService');
+const jwt = require('jsonwebtoken');
 
-// Middleware to verify Firebase ID token
+// Middleware to verify JWT token
 const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -9,15 +10,25 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided or invalid format' });
     }
 
-    const idToken = authHeader.split('Bearer ')[1];
+    const token = authHeader.split('Bearer ')[1];
     
-    const decodedToken = await AuthService.verifyToken(idToken);
+    // Verify JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'gdg-blog-secret-key-change-in-production';
+    const decodedToken = jwt.verify(token, jwtSecret);
+    
     req.user = decodedToken; // Add user info to request
     
     next();
   } catch (error) {
     console.error('Authentication middleware error:', error);
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    } else {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
   }
 };
 
@@ -27,8 +38,11 @@ const optionalAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const idToken = authHeader.split('Bearer ')[1];
-      const decodedToken = await AuthService.verifyToken(idToken);
+      const token = authHeader.split('Bearer ')[1];
+      
+      // Verify JWT token
+      const jwtSecret = process.env.JWT_SECRET || 'gdg-blog-secret-key-change-in-production';
+      const decodedToken = jwt.verify(token, jwtSecret);
       req.user = decodedToken;
     }
     
