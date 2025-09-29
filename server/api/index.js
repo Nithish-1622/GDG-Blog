@@ -1,24 +1,57 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
 // Import services and middleware
-const BlogService = require('./services/blogService');
-const AuthService = require('./services/authService');
-const { authenticateUser, optionalAuth } = require('./middleware/auth');
+const BlogService = require('../services/blogService');
+const AuthService = require('../services/authService');
+const { authenticateUser, optionalAuth } = require('../middleware/auth');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: [
-    process.env.CORS_ORIGIN || 'http://localhost:5173',
-    'http://localhost:5174',
-    'https://gdg-blog-kr3k.vercel.app'
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    console.log('🔍 CORS Debug - Origin:', origin);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log('✅ CORS: Allowing localhost origin');
+      return callback(null, true);
+    }
+    
+    // Allow any Vercel deployment URL for this project
+    if (origin.includes('gdg-blog-') && origin.includes('vercel.app')) {
+      console.log('✅ CORS: Allowing Vercel deployment URL');
+      return callback(null, true);
+    }
+    
+    // Allow Firebase hosting
+    if (origin.includes('gdg-blog-99118.web.app') || origin.includes('gdg-blog-99118.firebaseapp.com')) {
+      console.log('✅ CORS: Allowing Firebase hosting URL');
+      return callback(null, true);
+    }
+    
+    // Allow specific CORS_ORIGIN from environment
+    if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) {
+      console.log('✅ CORS: Allowing environment CORS_ORIGIN');
+      return callback(null, true);
+    }
+    
+    console.log('❌ CORS: Rejecting origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
@@ -27,8 +60,9 @@ app.use(express.json());
 // Health check
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'GDG Blog API Server is running!',
+    message: 'GDG Blog API Server is running on Vercel!',
     version: '1.0.0',
+    platform: 'Vercel Serverless',
     endpoints: {
       blogs: {
         'GET /api/blogs': 'Get all blogs',
@@ -39,6 +73,7 @@ app.get('/', (req, res) => {
       },
       auth: {
         'POST /api/auth/register': 'Register new user',
+        'POST /api/auth/login': 'Login user',
         'GET /api/auth/user': 'Get current user info (auth required)'
       }
     }
@@ -297,11 +332,5 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('🚀 GDG Blog API Server Started!');
-  console.log(`📡 Server running on http://localhost:${PORT}`);
-  console.log(`🔗 API Health: http://localhost:${PORT}/`);
-  console.log('📊 Health check: http://localhost:${PORT}/');
-  console.log('===============================================');
-});
+// Export the Express app for Vercel
+module.exports = app;
